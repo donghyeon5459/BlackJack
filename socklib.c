@@ -46,3 +46,23 @@ int make_server_socket(int portnum)
 	return make_server_socket_q(portnum, BACKLOG);
 }
 
+int connect_to_server(const char* host, int portnum)
+{
+	int sock;
+	struct sockaddr_in serv_saddr;
+	struct hostent* hp;
+
+	/* Step 1: Get a socket */
+
+	/* Step 2: Build the address */
+
+	/* Step 3: Connect to server */
+
+	return sock;
+}
+
+int set_socket_keep_alive(int fd)
+{
+	int optval = 1;
+	return setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &optval, sizeof(optval));
+}
