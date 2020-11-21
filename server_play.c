@@ -51,3 +51,4 @@ void gameSetting(user_deck *user, int userN) {
     {
         Card_Distributor(&dealer, 1);
     }
+}
