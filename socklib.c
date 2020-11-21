@@ -11,3 +11,8 @@
 
 #define HOSTLEN 256
 #define BACKLOG 1
+
+
+extern int make_server_socket(int portnum);
+extern int connect_to_server(const char* host, int portnum);
+extern int set_socket_keep_alive(int fd);
