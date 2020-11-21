@@ -9,7 +9,7 @@
 #define LOSE 0
 
 // 게임 진행 관련 구조체
-typedef struct
+typedef struct user_deck
 {
     int deck[10];
     int cardN;
@@ -50,6 +50,5 @@ void gameSetting(user_deck *user, int userN) {
     while (Calculate_Deck(&dealer) <= 16 && Calculate_Deck(&dealer) != BLACK_JACK && Calculate_Deck(&dealer) != BUST)
     {
         Card_Distributor(&dealer, 1);
-    
     }
 }
