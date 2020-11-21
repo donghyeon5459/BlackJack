@@ -50,4 +50,6 @@ void gameSetting(user_deck *user, int userN) {
     while (Calculate_Deck(&dealer) <= 16 && Calculate_Deck(&dealer) != BLACK_JACK && Calculate_Deck(&dealer) != BUST)
     {
         Card_Distributor(&dealer, 1);
+    
     }
+}
