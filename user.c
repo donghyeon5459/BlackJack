@@ -17,7 +17,11 @@ void tty_mode(int fd, int how) {
     }
 }
 
-
+void nodelay_mode(int fd) {
+    int flag = fcntl(fd, F_GETFL);
+    flag |= O_NDELAY;
+    fcntl(fd, F_SETFL, flag);
+}
 
 int main() {
     printf("hello\n");
@@ -25,14 +29,15 @@ int main() {
     /* 
     To do list:
     1. back up the tty mode
-    2. no canonical mode, no delay mode for stdin
+    2. set no delay mode for stdin
     3. connect to the server
-    4. set no canonical and no delay mode for socket
+    4. set no delay mode for socket
     5. interaction start
     6. resotre tty mode
     7. exit
     */
 
    stdin_tty_mode(0, 0); // backup stdin tty_mode
+   nodelay_mode(0); // set nodelay mode in stdin
 
 }
