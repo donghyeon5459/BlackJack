@@ -68,6 +68,126 @@ static void sigint_handler(int signum)
 	printf(" => Got SIGINT!\n");
 }
 
+
+static void* waiting_room_routine(void* argset_p)
+{
+	int user_indexes[USER_WAITING_MAX];
+	UserInfo user_info_in_order[USER_WAITING_MAX];
+	FILE* user_fps_in_order[USER_WAITING_MAX];
+	int i, j, not_all_ready, loop_enable = 1;
+
+	/* Lock the room */
+	pthread_mutex_lock(&room_lock);
+
+	while (loop_enable)
+	{
+		/* Wait the condition signal */
+		pthread_cond_wait(&room_cond, &room_lock);
+
+		/* Lock the users */
+		pthread_mutex_lock(&user_lock);
+
+		/* Check if all ready */
+		user_n = 0;
+		not_all_ready = 0;
+		for (i = 0; i < USER_WAITING_MAX; i++)
+		{
+			switch (user_states[i])
+			{
+			case USER_STATE_READY:
+				/* Print all active users */
+				for (j = 0; j < USER_WAITING_MAX; j++)
+				{
+					switch (user_states[j])
+					{
+					case USER_STATE_READY:
+						fprintf(user_fps[i], "%-15s READY\n", user_info[j].id);
+						break;
+					case USER_STATE_WAITING:
+						fprintf(user_fps[i], "PENDING...\n");
+					}
+				}
+				fputc('\n', user_fps[i]);
+				fflush(user_fps[i]);
+				/* Memorize the index */
+				user_indexes[user_n++] = i;
+				break;
+			case USER_STATE_WAITING:
+				/* Set not all ready */
+				not_all_ready = 1;
+				break;
+			case USER_STATE_ERROR:
+				/* Join the thread in error */
+				pthread_join(user_threads[i], NULL);
+				user_states[i] = USER_STATE_EMPTY;
+			}
+		}
+
+		/* Continue if all ready */
+		if (not_all_ready || user_n <= 0)
+		{
+			/* Must unlock */
+			pthread_mutex_unlock(&user_lock);
+			pthread_mutex_unlock(&room_lock);
+			continue;
+		}
+
+		printf("All ready for %d client%s.\n",
+			user_n, (user_n == 1) ? "" : "s");
+
+		/* Rearrange the users with user_n and join threads */
+		for (i = 0; i < user_n; i++)
+		{
+			user_info_in_order[i] = user_info[user_indexes[i]];
+			user_fps_in_order[i] = user_fps[user_indexes[i]];
+			pthread_join(user_threads[user_indexes[i]], NULL);
+		}
+		memcpy(user_info, user_info_in_order, user_n * sizeof(UserInfo));
+		memcpy(user_fps, user_fps_in_order, user_n * sizeof(FILE*));
+
+		/* Fork to start a game */
+		switch (fork())
+		{
+		default:
+			/* Parent */
+			clear_active_users();
+			break;
+		case 0:
+			/* Child */
+			/* Ignore SIGINT */
+			signal(SIGINT, SIG_IGN);
+			/* Start the game routine */
+			enclosing_game_routine();
+			/* End loop */
+			loop_enable = 0;
+			break;
+		case -1:
+			/* Fail */
+			perror("fork in waiting room");
+			/* Write an error message to each user */
+			for (i = 0; i < user_n; i++)
+			{
+				fprintf(user_fps[i], "To %s: Failed to make a game room.\n",
+					user_info[i].id);
+				fflush(user_fps[i]);
+			}
+			clear_active_users();
+		}
+
+		/* Disconnect users */
+		for (i = 0; i < user_n; i++)
+			fclose(user_fps[i]);
+
+		/* Must unlock */
+		pthread_mutex_unlock(&user_lock);
+	}
+
+	/* Must unlock */
+	pthread_mutex_unlock(&room_lock);
+
+	return NULL;
+}
+
 int main(int argc, const char* argv[])
 {
 	int sock, fd, port; /* socket and connection */
