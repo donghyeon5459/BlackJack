@@ -2,8 +2,11 @@
 #include <stdlib.h>
 #include <termios.h>
 #include <fcntl.h>
+#include <signal.h>
 
 #define BUFSIZE 256 // user input buffer
+
+int enable = 1;
 
 // from socklib.c
 int connect_to_server(const char* host, int portnum);
@@ -35,7 +38,7 @@ void interaction(int fd) {
 
     fp = fdopen(fd, "r+");
 
-    while (1) {
+    while (enable) {
         // print server's output
         if (fgets(buf, BUFSIZE - 1, fp)) {
             printf("%s", buf);
@@ -46,6 +49,11 @@ void interaction(int fd) {
         }
         usleep(10);
     }
+}
+
+void pipehandler(int signum) {
+    printf("\nsignal : SIGPIPE\n");
+    enable = 0;
 }
 
 int main(int argc, char *argv[]) {
@@ -59,6 +67,8 @@ int main(int argc, char *argv[]) {
    }
     server_address = argv[1];
     port_number = atoi(argv[2]);
+
+    signal(SIGPIPE, pipehandler); // if socket dies, handling sigpipe
 
     tty_mode(0, 0); // backup stdin tty_mode
     nodelay_mode(0); // set nodelay mode for stdin
