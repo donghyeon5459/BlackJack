@@ -1,4 +1,4 @@
-# BlackJack 소켓과 fork, thread를 이용한 블랙잭 게임
+# BlackJack 시그널 핸들링과 소켓과 fork, thread를 이용한 블랙잭 게임
 
 # 2018111328 김동현 서버 
 # 2014097024 김태균 게임 알고리즘
