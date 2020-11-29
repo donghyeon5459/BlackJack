@@ -12,19 +12,13 @@ void tty_mode(int fd, int how) {
     static struct termios original_mode;
     static int original_flags;
 
-    if (!how) { // save original termios and flags
+    if (!how) {
         tcgetattr(fd, &original_mode);
         original_flags = fcntl(fd, F_GETFL);
-
-        // printf("saved original tty_mode\n");
-        return;
     }
-    else { // restore original termios and flags
+    else {
         tcsetattr(fd, TCSANOW, &original_mode);
         fcntl(fd, F_SETFL, original_flags);
-
-        // printf("restored original tty_mode\n");
-        return;
     }
 }
 
@@ -32,22 +26,29 @@ void nodelay_mode(int fd) {
     int flag = fcntl(fd, F_GETFL);
     flag |= O_NDELAY;
     fcntl(fd, F_SETFL, flag);
+}
 
-    // printf("set nodelay_mode for fd: %d\n", fd);
-    return;
+void interaction(int fd) {
+    FILE *fp;
+    char buf[BUFSIZE];
+    char input;
+
+    fp = fdopen(fd, "r+");
+
+    while (1) {
+        // print server's output
+        if (fgets(buf, BUFSIZE - 1, fp)) {
+            printf("%s", buf);
+        }
+        // put user's input to socket
+        if ((input = getchar()) != EOF) {
+            fputc(input, fp);
+        }
+        usleep(10);
+    }
 }
 
 int main(int argc, char *argv[]) {
-    /* 
-    To do list:
-    1. back up the tty mode
-    2. set no delay mode for stdin
-    3. connect to the server
-    4. set no delay mode for socket
-    5. interaction start
-    6. restore tty mode
-    7. exit
-    */
    const char* server_address;
    int port_number, fd;
 
@@ -59,24 +60,9 @@ int main(int argc, char *argv[]) {
     server_address = argv[1];
     port_number = atoi(argv[2]);
 
-    /*
-    printf("server address: %s\n", server_address);
-    printf("port_number :%d\n", port_number);
-    */
-
     tty_mode(0, 0); // backup stdin tty_mode
     nodelay_mode(0); // set nodelay mode for stdin
 
-    /* test user input
-    char buf[BUFSIZE];
-    while (1) {
-        if (fgets(buf, BUFSIZE, stdin)) {
-            printf("%s\n", buf);
-        }
-    }
-    */ 
-
-    /* 
     // connect to the server
     if ((fd = connect_to_server(port_number, fd)) == -1) {
         fprintf(stderr, "Server connect error\n");
@@ -86,9 +72,15 @@ int main(int argc, char *argv[]) {
     // set nodelay mode for socket
     nodelay_mode(fd);
 
-    close(fd); // close socket
-    */
+    // interaction with server
+    interaction(fd);
 
-    tty_mode(0, 1); // restore stdin tty_mode
+    // close socket
+    close(fd); 
+
+    // restore stdin tty_mode
+    tty_mode(0, 1); 
+
+    printf("Closing the client...\n");
     return 0;
 }
