@@ -3,6 +3,8 @@
 #include <termios.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <time.h>
+#include <unistd.h>
 
 #define BUFSIZE 256 // user input buffer
 
@@ -74,7 +76,7 @@ int main(int argc, char *argv[]) {
     nodelay_mode(0); // set nodelay mode for stdin
 
     // connect to the server
-    if ((fd = connect_to_server(port_number, fd)) == -1) {
+    if ((fd = connect_to_server(server_address,port_number)) == -1) {
         fprintf(stderr, "Server connect error\n");
         exit(1);
     }
