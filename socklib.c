@@ -47,6 +47,7 @@ static int make_server_socket_q(int portnum, int backlog)
 	/* Step 2: build the address */
 	gethostname(hostname, HOSTLEN);
 	hp = gethostbyname(hostname);
+	//hp = gethostbyname("155.230.28.224");
 
 	fprintf(stdout, "Making the server...\n");
 	print_all_addresses(hp, portnum);
@@ -55,7 +56,7 @@ static int make_server_socket_q(int portnum, int backlog)
 	//memcpy(&saddr.sin_addr, hp->h_addr, hp->h_length);  local에서만 작동
 	saddr.sin_port = htons(portnum);
 	saddr.sin_family = AF_INET;
-	saddr.sin_addr.s_addr = inet_addr("155.230.28.224");   //연구실 서버 ip 원격용
+	//saddr.sin_addr.s_addr = inet_addr("155.230.28.224");   //연구실 서버 ip 원격용
 	//inet_aton("155.230.28.211",&saddr.sin_addr);
 
 	/* Step 3: Bind the address to the socket */
