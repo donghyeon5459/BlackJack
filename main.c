@@ -546,5 +546,3 @@ static void process_request(int fd)
 		fclose(fp);
 	}
 }
-
-
