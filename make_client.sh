@@ -1,1 +1,1 @@
-gcc *_socklib.c *_client*.c -o client
+gcc *socklib.c *client*.c -o client
