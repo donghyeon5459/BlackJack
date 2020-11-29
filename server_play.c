@@ -191,14 +191,14 @@ void *play_game(void *data)
     int idx = user->index;
     char dividend[100];
 
-    /*게임에 처음 참가하는 경우 1000 배당*/
+    // 게임에 처음 참가하는 경우 1000 배당
     if (user_info[idx].draw_count + user_info[idx].win_count + user_info[idx].lose_count == 0)
     {
         fprintf(fp, "처음으로 접속하셨습니다! 첫 접속 기념으로  1000$를 지급해드리겠습니다.\n");
         user_info[idx].money += 1000;
     }
 
-    /*배당금 설정*/
+    // 배당금 설정
     while (1)
     {
         fprintf(fp, "배당금을 입력해주세요(100~10000): ");
@@ -223,7 +223,7 @@ void *play_game(void *data)
     }
     fprintf(fp, "카드 두장을 나눠드리겠습니다. 당신이 받은 카드는 다음과 같습니다\n");
     print_Deck(user, fp);
-    /*카드를 받자마자 경기가 끝나는 경우*/
+    // 카드를 받자마자 경기가 끝나는 경우
     if (Calculate_Deck(user) == BUST)
     {
         fprintf(fp, "BUST입니다. 당신은 패배했습니다\n\n");
@@ -263,7 +263,7 @@ void *play_game(void *data)
         return NULL;
     }
 
-    /*그외*/
+    // 그외
     while (1)
     {
 
@@ -350,4 +350,26 @@ void *play_game(void *data)
 
         print_other_Deck(user, fp, idx);
     }
+}
+
+void start_game_routine()
+{
+    int card_deck[52];
+    char buf[50];
+    int i;
+    int dividend;
+
+    pthread_t game_thread[8];
+    gameSetting(&user[i], user_n);
+
+    for (i = 0; i < user_n; i++)
+    {
+        user[i].index = i;
+        pthread_create(&game_thread[i], NULL, play_game, &user[i]);
+    }
+
+    for (i = 0; i < user_n; i++)
+        pthread_join(game_thread[i], NULL);
+    printf("pthread_join is over\n");
+    return;
 }
