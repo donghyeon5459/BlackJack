@@ -134,6 +134,23 @@ static void enclosing_game_routine()
 	printf("The game on process %d is done.\n", getpid());
 }
 
+static int print_child_process_list()
+{
+	FILE* fp_sh;
+	char buf[BUFSIZ];
+
+	snprintf(buf, BUFSIZ - 1, "ps -eo pid,fname,ppid | grep \"%d\\s*$\"",
+		getpid());
+	if ((fp_sh = popen(buf, "r")) == NULL)
+		return -1;
+
+	while (fgets(buf, BUFSIZ - 1, fp_sh))
+		fputs(buf, stdout);
+	
+	pclose(fp_sh);
+
+	return 0;
+}
 
 static void* enter_waiting_room(void* argset_p)
 {
@@ -406,6 +423,64 @@ static void* waiting_room_routine(void* argset_p)
 
 	return NULL;
 }
+static void process_request(int fd)
+{
+	FILE* fp;
+	static int index;
+	int found;
+
+	if (!(fp = fdopen(fd, "r+")))
+	{
+		perror("Process request fdopen");
+		fprintf(stderr, "Sorry, cannot open the socket in C FILE stream.\n");
+		close(fd);
+		return;
+	}
+
+	{
+		/* Lock the mutex */
+		pthread_mutex_lock(&user_lock);
+
+		/* Check there is empty user slot */
+		found = 0;
+		for (index = 0; index < USER_WAITING_MAX; index++)
+		{
+			if (user_states[index] == USER_STATE_EMPTY)
+			{
+				found = 1;
+				break;
+			}
+		}
+
+		/* Return if the waiting room is full */
+		if (!found)
+		{
+			fprintf(fp, "Sorry. The room is full!\n");
+			fflush(fp);
+			fclose(fp);
+			pthread_mutex_unlock(&user_lock); /* Must unlock */
+			return;
+		}
+
+		/* Turn on user_states and set fp */
+		user_states[index] = USER_STATE_WAITING;
+		user_fps[index] = fp;
+
+		/* Unlock the mutex */
+		pthread_mutex_unlock(&user_lock);
+	}
+
+	/* Create a thread */
+	if (pthread_create(
+		&user_threads[index], NULL, enter_waiting_room, &index
+		) == -1)
+	{
+		perror("Entering waiting room pthread_create");
+		fprintf(fp, "Sorry, entering waiting room failed\n");
+		fflush(fp);
+		fclose(fp);
+	}
+}
 
 int main(int argc, const char* argv[])
 {
@@ -485,64 +560,4 @@ int main(int argc, const char* argv[])
 	print_child_process_list();
 
 	return 0;
-}
-
-
-static void process_request(int fd)
-{
-	FILE* fp;
-	static int index;
-	int found;
-
-	if (!(fp = fdopen(fd, "r+")))
-	{
-		perror("Process request fdopen");
-		fprintf(stderr, "Sorry, cannot open the socket in C FILE stream.\n");
-		close(fd);
-		return;
-	}
-
-	{
-		/* Lock the mutex */
-		pthread_mutex_lock(&user_lock);
-
-		/* Check there is empty user slot */
-		found = 0;
-		for (index = 0; index < USER_WAITING_MAX; index++)
-		{
-			if (user_states[index] == USER_STATE_EMPTY)
-			{
-				found = 1;
-				break;
-			}
-		}
-
-		/* Return if the waiting room is full */
-		if (!found)
-		{
-			fprintf(fp, "Sorry. The room is full!\n");
-			fflush(fp);
-			fclose(fp);
-			pthread_mutex_unlock(&user_lock); /* Must unlock */
-			return;
-		}
-
-		/* Turn on user_states and set fp */
-		user_states[index] = USER_STATE_WAITING;
-		user_fps[index] = fp;
-
-		/* Unlock the mutex */
-		pthread_mutex_unlock(&user_lock);
-	}
-
-	/* Create a thread */
-	if (pthread_create(
-		&user_threads[index], NULL, enter_waiting_room, &index
-		) == -1)
-	{
-		perror("Entering waiting room pthread_create");
-		fprintf(fp, "Sorry, entering waiting room failed\n");
-		fflush(fp);
-		fclose(fp);
-	}
 }
