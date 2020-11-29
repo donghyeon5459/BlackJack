@@ -543,6 +543,7 @@ int main(int argc, const char* argv[])
 			/* It is fine because SIGCHLD's flag is set to SA_RESTART 
 			 * If not set, must check whether interrupted by signal or not: */
 			/*if (errno != EINTR)*/
+			printf("dd\n");
 			break;
 		}
 		process_request(fd);

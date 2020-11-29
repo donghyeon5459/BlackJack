@@ -37,6 +37,31 @@ static int make_server_socket_q(int portnum, int backlog)
 	/* Step 2: build the address */
 	/* Step 3: Bind the address to the socket */
 	/* Step 4: Listen the socket */
+
+
+	
+	if ((sock = socket(PF_INET, SOCK_STREAM, 0)) == -1)
+		return -1;
+
+	/* Step 2: build the address */
+	gethostname(hostname, HOSTLEN);
+	hp = gethostbyname(hostname);
+
+	fprintf(stdout, "Making the server...\n");
+	print_all_addresses(hp, portnum);
+
+	memset(&saddr, 0, sizeof(saddr));
+	memcpy(&saddr.sin_addr, hp->h_addr, hp->h_length);
+	saddr.sin_port = htons(portnum);
+	saddr.sin_family = AF_INET;
+
+	/* Step 3: Bind the address to the socket */
+	if (bind(sock, (struct sockaddr*)&saddr, sizeof(saddr)) == -1)
+		return -1;
+
+	/* Step 4: Listen the socket */
+	if (listen(sock, backlog) == -1)
+		return -1;
 	
 	return sock;
 }
@@ -57,6 +82,27 @@ int connect_to_server(const char* host, int portnum)
 	/* Step 2: Build the address */
 
 	/* Step 3: Connect to server */
+
+
+	/* Step 1: Get a socket */
+	if ((sock = socket(PF_INET, SOCK_STREAM, 0)) == -1)
+		return -1;
+
+	/* Step 2: Build the address */
+	if (!(hp = gethostbyname(host)))
+		return -1;
+
+	fprintf(stdout, "Connecting to the server...\n");
+	print_all_addresses(hp, portnum);
+
+	memset(&serv_saddr, 0, sizeof(serv_saddr));
+	memcpy(&serv_saddr.sin_addr, hp->h_addr, hp->h_length);
+	serv_saddr.sin_port = htons(portnum);
+	serv_saddr.sin_family = AF_INET;
+
+	/* Step 3: Connect to server */
+	if (connect(sock, (struct sockaddr*)&serv_saddr, sizeof(serv_saddr)) == -1)
+		return -1;
 
 	return sock;
 }
