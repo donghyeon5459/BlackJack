@@ -53,7 +53,7 @@ static int make_server_socket_q(int portnum, int backlog)
 	print_all_addresses(hp, portnum);
 
 	memset(&saddr, 0, sizeof(saddr));
-	//memcpy(&saddr.sin_addr, hp->h_addr, hp->h_length);  local에서만 작동
+	memcpy(&saddr.sin_addr, hp->h_addr, hp->h_length);  // local에서만 작동
 	saddr.sin_port = htons(portnum);
 	saddr.sin_family = AF_INET;
 	//saddr.sin_addr.s_addr = inet_addr("155.230.28.224");   //연구실 서버 ip 원격용
@@ -103,7 +103,7 @@ int connect_to_server(const char* host, int portnum)
 	memcpy(&serv_saddr.sin_addr, hp->h_addr, hp->h_length);
 	serv_saddr.sin_port = htons(portnum);
 	serv_saddr.sin_family = AF_INET;
-	inet_aton("155.230.28.224",&serv_saddr.sin_addr);  //연구실 서버
+	//inet_aton("155.230.28.224",&serv_saddr.sin_addr);  //연구실 서버
 	//serv_saddr.sin_addr.s_addr = inet_addr("155.230.28.224");
 
 	/* Step 3: Connect to server */
