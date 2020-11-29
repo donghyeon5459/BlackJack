@@ -182,7 +182,7 @@ void gameSetting(user_deck *user, int userN) {
     }
 }
 
-// test
+// 블랙잭 게임 내부 구현
 void *play_game(void *data)
 {
     user_deck *user = data;
