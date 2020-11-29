@@ -19,3 +19,75 @@ extern void print_user_info(const UserInfo* user_info_p, FILE* fp);
 extern int read_user_info_from_file(const char* id, UserInfo* user_info_buf);
 extern int write_user_info_to_file(const UserInfo* user_info_p);
 extern int print_user_info_file_list(FILE* fp);
+
+
+int check_id_validity(char* id)
+{
+	if (!isalpha(*id))
+		return 0;
+	*id = tolower(*id);
+	for (id = id + 1; *id; id++)
+	{
+		if (!isalnum(*id) && *id != '_')
+			return 0;
+		*id = tolower(*id);
+	}
+	return 1;
+}
+
+void print_user_info(const UserInfo* uip, FILE* fp)
+{
+	fprintf(fp, "%-10s  ", uip->id);
+	fprintf(fp, "%5d  ", uip->money);
+	fprintf(fp, "%4d  %4d  %4d  ",
+		uip->win_count, uip->draw_count, uip->lose_count);
+	if (uip->win_count > 0)
+	{
+		fprintf(fp, "    %6.2lf%%       ", (double)uip->win_count
+			/ (uip->win_count + uip->draw_count + uip->lose_count) * 100.0);
+	}
+	else
+	{
+		fprintf(fp, "      0.00%%       ");
+	}
+	fprintf(fp, "%s", ctime(&uip->last_time));
+}
+
+static void get_user_info_filename(const char* id, char* filename_buf)
+{
+	strncpy(filename_buf, id, USER_ID_SIZE - 1);
+	strcat(filename_buf, (const char*)("." USER_FILE_EXTENTION));
+}
+
+
+static int make_new_user_info_file(	const char* id, const char* filename, UserInfo* user_info_buf )
+{
+	int fd;
+
+	/* Create a file */
+	if ((fd = creat(filename, USER_FILE_MODE)) == -1)
+	{
+		perror(filename);
+		return -1;
+	}
+
+	/* Initialize the user info */
+	strncpy(user_info_buf->id, id, USER_ID_SIZE - 1);
+	user_info_buf->money = 0;
+	user_info_buf->win_count = 0;
+	user_info_buf->lose_count = 0;
+	user_info_buf->draw_count = 0;
+	time(&user_info_buf->last_time);
+
+	/* Write to the file */
+	if (write(fd, user_info_buf, sizeof(UserInfo)) == -1)
+	{
+		perror(filename);
+		close(fd);
+		return -1;
+	}
+
+	/* Close the file descriptor */
+	close(fd);
+	return 0;
+}
