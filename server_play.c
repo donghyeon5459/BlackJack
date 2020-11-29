@@ -74,6 +74,22 @@ int Calculate_Deck(user_deck *user)
         return sum;
 }
 
+// 셔플 함수
+void Shuffle(int *index, int nMax)
+{
+    int i, n;
+    int temp;
+
+    srand(time(NULL));
+    for (i = nMax - 1; i >= 0; i--)
+    {
+        n = rand() % nMax;
+        temp = index[i];
+        index[i] = index[n];
+        index[n] = temp;
+    }
+}
+
 // 게임 세팅 함수 구현
 void gameSetting(user_deck *user, int userN) {
     int i;
