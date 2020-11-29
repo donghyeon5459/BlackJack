@@ -1,5 +1,10 @@
+#include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#include <pthread.h>
 #include "server_user.h"
+
 
 #define BLACK_JACK -2
 #define BUST -3
@@ -87,6 +92,71 @@ void Shuffle(int *index, int nMax)
         temp = index[i];
         index[i] = index[n];
         index[n] = temp;
+    }
+}
+
+// index 값들에게 카드 값들을 부여하는 함수
+void IndexToString(int index, char *card)
+{
+    int num;
+    char num2[5];
+
+    if (index / 13 == 0)
+        strcpy(card, "clover_");
+    else if (index / 13 == 1)
+        strcpy(card, "heart_");
+    else if (index / 13 == 2)
+        strcpy(card, "diamond_");
+    else
+        strcpy(card, "spade_");
+
+    if (index % 13 == 0)
+        strcat(card, "A");
+
+    else if (0 < index % 13 && index % 13 < 10)
+    {
+        num = (index % 13) + 1;
+        sprintf(num2, "%d", num);
+        strcat(card, num2);
+    }
+    else if (index % 13 == 10)
+        strcat(card, "J");
+    else if (index % 13 == 11)
+        strcat(card, "Q");
+    else
+        strcat(card, "K");
+}
+
+// 덱 print 함수
+void print_Deck(user_deck *puser, FILE *fp)
+{
+    char s[20];
+    int i = 0;
+
+    for (i = 0; i < puser->cardN; i++)
+    {
+        IndexToString(puser->deck[i], s);
+        fprintf(fp, "%s\n", s);
+    }
+    fprintf(fp, "\n\n");
+}
+
+void print_other_Deck(user_deck *puser, FILE *fp, int idx)
+{
+    char s[20];
+    int i;
+
+    fprintf(fp, "Deck of dealer:\n");
+    IndexToString(dealer.deck[0], s);
+    fprintf(fp, "%s\n\n", s);
+
+    for (i = 0; i < user_n; i++)
+    {
+        if (idx == i)
+            continue;
+        fprintf(fp, "user:%s \n", user_info[i].id);
+        print_Deck(&user[i], fp);
+        fflush(fp);
     }
 }
 
