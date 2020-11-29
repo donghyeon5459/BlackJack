@@ -91,3 +91,86 @@ static int make_new_user_info_file(	const char* id, const char* filename, UserIn
 	close(fd);
 	return 0;
 }
+
+
+int read_user_info_from_file(const char* id, UserInfo* user_info_buf)
+{
+	int fd;
+	char filename[USER_FILENAME_SIZE];
+
+	if (!id || !*id)//null 체크
+		return -1;
+
+	/* Get the filename */
+	get_user_info_filename(id, filename);
+
+	/* Open the file */
+	if ((fd = open(filename, O_RDONLY)) == -1)
+	{
+		/*perror(filename);*/
+		/* If opening failed, try to make new one */
+		if (make_new_user_info_file(id, filename, user_info_buf) == -1)
+			return -1;
+		return 0;
+	}
+
+	/* Read from the file */
+	if (read(fd, user_info_buf, sizeof(UserInfo)) == -1)
+	{
+		perror(filename);
+		close(fd);
+		return -1;
+	} 
+
+	/* Refresh the UserInfo::last_time */
+	time(&user_info_buf->last_time);
+
+	/* Close the file descriptor */
+	close(fd);
+	return 0;
+}
+
+
+int write_user_info_to_file(const UserInfo* user_info_p)
+{
+	int fd;
+	char filename[USER_FILENAME_SIZE];
+
+	/* Get the filename */
+	get_user_info_filename(user_info_p->id, filename);
+
+	/* Open the file */
+	if ((fd = open(filename, O_WRONLY | O_TRUNC)) == -1)
+	{
+		perror(filename);
+		return -1;
+	}
+
+	/* Write to the file */
+	if (write(fd, user_info_p, sizeof(UserInfo)) == -1)
+	{
+		perror(filename);
+		close(fd);
+		return -1;
+	}
+	
+	/* Close the file descriptor */
+	close(fd);
+	return 0;
+}
+
+int print_user_info_file_list(FILE* fp)
+{
+	FILE* fp_ls;
+	char buf[BUFSIZ];
+
+	if ((fp_ls = popen("ls *." USER_FILE_EXTENTION, "r")) == NULL)
+		return -1;
+
+	while (fgets(buf, BUFSIZ - 1, fp_ls))
+		fputs(buf, fp);
+	
+	pclose(fp_ls);
+
+	return 0;
+}
