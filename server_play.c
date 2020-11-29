@@ -18,18 +18,61 @@ typedef struct user_deck
     int sum;
 } user_deck;
 
-int Calculate_Deck(user_deck *user) {
-    int i;
-    int sum = 0;
-    int check = 0;
-
-    // 관련 함수 구현 해야함 !!
-}
+extern int user_n;
+extern FILE *user_fps[8];
+extern UserInfo user_info[8];
 
 // 카드 수, 딜러와 유저 변수
 int card_deck[52];
 user_deck dealer;
 user_deck user[3];
+
+// 카드 분배 함수
+void Card_Distributor(user_deck *user, int n)
+{
+    static int cnt;
+    int i;
+    for (i = 0; i < n; i++)
+    {
+        user->deck[user->cardN] = card_deck[cnt++];
+        user->cardN++;
+    }
+}
+
+// 덱 계산 함수
+int Calculate_Deck(user_deck *user)
+{
+    int i;
+    int sum = 0;
+    int check = 0;
+
+    for (i = 0; i < user->cardN; i++)
+    {
+        if (user->deck[i] % 13 == 0)
+        {
+            sum += 11;
+        }
+        else if (0 < user->deck[i] % 13 && user->deck[i] % 13 < 10)
+            sum += (user->deck[i] % 13) + 1;
+        else
+            sum += 10;
+    }
+
+    /*calcuate deck*/
+
+    for (i = 0; i < user->cardN; i++)
+    {
+        if (user->deck[i] % 13 == 0 && sum > 21)
+            sum -= 10;
+    }
+
+    if (sum > 21)
+        return BUST;
+    else if (sum == 21)
+        return BLACK_JACK;
+    else
+        return sum;
+}
 
 // 게임 세팅 함수 구현
 void gameSetting(user_deck *user, int userN) {
