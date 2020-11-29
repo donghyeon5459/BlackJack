@@ -181,3 +181,173 @@ void gameSetting(user_deck *user, int userN) {
         Card_Distributor(&dealer, 1);
     }
 }
+
+// test
+void *play_game(void *data)
+{
+    user_deck *user = data;
+    FILE *fp = user_fps[user->index];
+    char buf[20];
+    int idx = user->index;
+    char dividend[100];
+
+    /*게임에 처음 참가하는 경우 1000 배당*/
+    if (user_info[idx].draw_count + user_info[idx].win_count + user_info[idx].lose_count == 0)
+    {
+        fprintf(fp, "처음으로 접속하셨습니다! 첫 접속 기념으로  1000$를 지급해드리겠습니다.\n");
+        user_info[idx].money += 1000;
+    }
+
+    /*배당금 설정*/
+    while (1)
+    {
+        fprintf(fp, "배당금을 입력해주세요(100~10000): ");
+        fflush(fp);
+        fgets(buf, sizeof(buf), fp);
+        user->dividend = atoi(buf);
+        if (user->dividend < 100 || user->dividend > 10000)
+        {
+            fprintf(fp, "잘못된 범위의 금액을 입력하셨습니다.\n");
+            fflush(fp);
+            continue;
+        }
+        fflush(fp);
+
+        if (user->dividend > user_info[idx].money)
+        {
+            fprintf(fp, "당신이 보유한 금액은 %d입니다. 더 적은 금액을 입력해주세요\n", user_info[idx].money);
+            continue;
+        }
+        user_info[idx].money -= user->dividend;
+        break;
+    }
+    fprintf(fp, "카드 두장을 나눠드리겠습니다. 당신이 받은 카드는 다음과 같습니다\n");
+    print_Deck(user, fp);
+    /*카드를 받자마자 경기가 끝나는 경우*/
+    if (Calculate_Deck(user) == BUST)
+    {
+        fprintf(fp, "BUST입니다. 당신은 패배했습니다\n\n");
+        fprintf(fp, "당신은 %d만큼의 배당금을 잃었습니다. 현재 보유 금액 :%d \n\n", user->dividend, user_info[idx].money);
+        user_info[idx].lose_count++;
+        fprintf(fp, "Deck of dealer:\n");
+        print_Deck(&dealer, fp);
+        fflush(fp);
+        fprintf(fp, "다른 플레이어가 끝날 때까지 잠시만 기다려주세요..");
+        fflush(fp);
+        return NULL;
+    }
+
+    else if (Calculate_Deck(user) == BLACK_JACK && Calculate_Deck(&dealer) == BLACK_JACK)
+    {
+        fprintf(fp, "양측다 무승부입니다\n\n");
+        user_info[idx].money += user->dividend;
+        fprintf(fp, "배당금을 돌려드렸습니다. 현재 보유 금액 :%d \n\n", user_info[idx].money);
+        user_info[idx].draw_count++;
+        fprintf(fp, "Deck of dealer:\n");
+        print_Deck(&dealer, fp);
+        fflush(fp);
+        fprintf(fp, "다른 플레이어가 끝날 때까지 잠시만 기다려주세요..");
+        fflush(fp);
+        return NULL;
+    }
+    else if (Calculate_Deck(user) != BLACK_JACK && Calculate_Deck(&dealer) == BLACK_JACK)
+    {
+        fprintf(fp, "딜러의 패가 블랙잭입니다. 당신은 패배했습니다\n\n");
+        fprintf(fp, "당신은 %d만큼의 배당금을 잃었습니다. 현재 보유 금액 :%d \n\n", user->dividend, user_info[idx].money);
+        user_info[idx].lose_count++;
+        fprintf(fp, "Deck of dealer:\n");
+        print_Deck(&dealer, fp);
+        fflush(fp);
+        fprintf(fp, "다른 플레이어가 끝날 때까지 잠시만 기다려주세요..");
+        fflush(fp);
+        return NULL;
+    }
+
+    /*그외*/
+    while (1)
+    {
+
+        fprintf(fp, "Hit 하시려면 h를, Stand하시려면 s를, 다른 사람의 패를 보려면 p를눌러주세요(h/s/p)");
+        fflush(fp);
+        fgets(buf, sizeof(buf), fp);
+        fflush(fp);
+        fprintf(fp, "\n");
+
+        if (buf[0] == 'h' || buf[0] == 'H')
+        {
+            Card_Distributor(user, 1);
+            fprintf(fp, "카드를 1장 나눠드렸습니다.\n");
+            print_Deck(user, fp);
+            if (Calculate_Deck(user) == BUST && Calculate_Deck(&dealer) != BUST)
+            {
+                fprintf(fp, "BUST입니다. 당신은 패배했습니다\n\n");
+                fprintf(fp, "당신은 %d만큼의 배당금을 잃었습니다. 현재 보유 금액 :%d \n\n", user->dividend, user_info[idx].money);
+                user_info[idx].lose_count++;
+                fprintf(fp, "Deck of dealer:\n");
+                print_Deck(&dealer, fp);
+                fflush(fp);
+                fprintf(fp, "다른 플레이어가 끝날 때까지 잠시만 기다려주세요..");
+                fflush(fp);
+                return NULL;
+            }
+            else if (Calculate_Deck(user) == BUST && Calculate_Deck(&dealer) == BUST)
+            {
+                fprintf(fp, "무승부 입니다\n");
+                user_info[idx].money += user->dividend;
+                fprintf(fp, "현재 보유 금액 :%d \n", user_info[idx].money);
+                user_info[idx].draw_count++;
+                fflush(fp);
+                fprintf(fp, "Deck of dealer:\n");
+                print_Deck(&dealer, fp);
+                fprintf(fp, "다른 플레이어가 끝날 때까지 잠시만 기다려주세요..");
+                fflush(fp);
+                return NULL;
+            }
+
+            continue;
+        }
+
+        else if (buf[0] == 'p' || buf[0] == 'P')
+        {
+            print_other_Deck(user, fp, idx);
+            continue;
+        }
+        else if (buf[0] == 's' || buf[0] == 'S')
+        {
+            if (Calculate_Deck(user) > Calculate_Deck(&dealer))
+            {
+                fprintf(fp, "당신이 승리했습니다\n\n");
+                user_info[idx].money += user->dividend * 2;
+                fprintf(fp, "당신은 %d만큼의 배당금을 얻었습니다. 현재 보유 금액 :%d \n", user->dividend, user_info[idx].money);
+                user_info[idx].win_count++;
+            }
+            else if (Calculate_Deck(user) < Calculate_Deck(&dealer))
+            {
+                fprintf(fp, "당신이 패배했습니다\n");
+                fprintf(fp, "당신은 %d만큼의 배당금을 잃었습니다. 현재 보유 금액 :%d \n\n", user->dividend, user_info[idx].money);
+                user_info[idx].lose_count++;
+            }
+            else
+            {
+                fprintf(fp, "무승부 입니다\n");
+                user_info[idx].money += user->dividend;
+                fprintf(fp, "현재 보유 금액 :%d \n", user_info[idx].money);
+                user_info[idx].draw_count++;
+            }
+            fflush(fp);
+            fprintf(fp, "Deck of dealer:\n");
+            print_Deck(&dealer, fp);
+            fprintf(fp, "다른 플레이어가 끝날 때까지 잠시만 기다려주세요..");
+            fflush(fp);
+            return NULL;
+        }
+        else
+        {
+            fprintf(fp, "잘못 입력하셨습니다(h/s)\n");
+            continue;
+        }
+        break;
+
+        print_other_Deck(user, fp, idx);
+    }
+}
