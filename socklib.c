@@ -46,7 +46,7 @@ static int make_server_socket_q(int portnum, int backlog)
 
 	/* Step 2: build the address */
 	gethostname(hostname, HOSTLEN);
-	hp = gethostbyname(hostname);
+	hp = gethostbyname("localhost");
 	//hp = gethostbyname("155.230.28.224");
 
 	fprintf(stdout, "Making the server...\n");
